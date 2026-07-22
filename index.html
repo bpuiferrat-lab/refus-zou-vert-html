@@ -1,0 +1,534 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Refus Zou Vert</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#F4F6FA;--surface:#FFF;--border:#DDE2EC;--text:#1A2136;
+    --muted:#64748B;--accent:#2255CC;--accent-light:#EBF0FC;
+    --danger:#DC2626;--danger-light:#FEE2E2;
+    --warn:#D97706;--warn-light:#FEF3C7;
+    --ok:#059669;--ok-light:#D1FAE5;
+    --font:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    --radius:6px;
+  }
+  body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;padding:0 0 48px;min-height:100vh}
+
+  .header{background:var(--surface);border-bottom:1px solid var(--border);padding:20px 32px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:24px}
+  .header-left h1{font-size:17px;font-weight:600;letter-spacing:-.01em}
+  .header-left p{font-size:12px;color:var(--muted);margin-top:2px}
+  .stats{display:flex;gap:24px;flex-wrap:wrap}
+  .stat{text-align:right}
+  .stat-n{font-size:22px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1}
+  .stat-label{font-size:11px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.05em}
+
+  .controls{padding:16px 32px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+  .search-wrap{position:relative;flex:1;min-width:220px;max-width:340px}
+  .search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+  input[type="search"]{width:100%;padding:7px 10px 7px 32px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:var(--font);background:var(--bg);color:var(--text);outline:none;transition:border-color .15s}
+  input[type="search"]:focus{border-color:var(--accent);background:#fff}
+  input[type="date"]{padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:var(--font);background:var(--bg);color:var(--text);outline:none}
+  .date-wrap{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{padding:5px 10px;border:1px solid var(--border);border-radius:999px;background:var(--surface);cursor:pointer;font-size:12px;color:var(--muted);user-select:none;transition:all .1s}
+  .chip:hover{border-color:var(--accent)}
+  .chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .chip .n{opacity:.7;margin-left:5px;font-variant-numeric:tabular-nums}
+  .chip.reset{color:var(--danger);border-color:transparent;background:transparent}
+  .chip.reset:hover{background:var(--danger-light)}
+
+  .toggle{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;user-select:none;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
+  .toggle input{margin:0}
+  .toggle.active{background:var(--warn-light);color:var(--warn);border-color:var(--warn)}
+
+  .btn{padding:6px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-size:12px;color:var(--text);user-select:none;transition:all .1s;font-family:var(--font)}
+  .btn:hover{border-color:var(--accent)}
+  .btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+  .bank-summary{margin:16px 32px 0;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;display:none}
+  .bank-summary.open{display:block}
+  .bank-summary .head{padding:12px 16px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;font-weight:600}
+  .bank-summary table{font-size:12px}
+  .bank-summary tr.bank-row{cursor:pointer}
+  .bank-summary tr.bank-row:hover td{background:var(--accent-light)}
+  .bank-summary tr.bank-row.active td{background:var(--accent);color:#fff}
+
+  .active-filter{display:inline-flex;align-items:center;gap:8px;padding:4px 10px;background:var(--accent);color:#fff;border-radius:var(--radius);font-size:12px;font-weight:500}
+  .active-filter .x{cursor:pointer;opacity:.7;font-size:16px;line-height:1}
+  .active-filter .x:hover{opacity:1}
+
+  .table-wrap{margin:16px 32px;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+  th{background:var(--bg);font-weight:600;font-size:11px;text-transform:uppercase;color:var(--muted);letter-spacing:.03em;position:sticky;top:0}
+  tr:last-child td{border-bottom:0}
+  tr:hover{background:var(--bg)}
+  td.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  td a{color:var(--accent);text-decoration:none}
+  td a:hover{text-decoration:underline}
+
+  .pill{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
+  .pill.reason{background:var(--accent-light);color:var(--accent)}
+  .pill.reason.non_justifie{background:#FEE2E2;color:#991B1B}
+  .pill.reason.endettement{background:#FEF3C7;color:#92400E}
+  .pill.reason.profil{background:#EDE9FE;color:#5B21B6}
+  .pill.reason.type_projet{background:#DBEAFE;color:#1E3A8A}
+  .pill.reason.apport_epargne_insuffisant{background:#FCE7F3;color:#9F1239}
+  .pill.reason.capacite_insuffisante{background:#FEF3C7;color:#92400E}
+  .pill.reason.paternite{background:#EDE9FE;color:#5B21B6}
+  .pill.reason.perimetre_geographique{background:#DBEAFE;color:#1E3A8A}
+  .pill.reason.mauvaise_tenue_de_compte{background:#FEE2E2;color:#991B1B}
+  .pill.reason.taux_usure{background:#FED7AA;color:#9A3412}
+  .pill.reason.autre_texte_libre{background:#F1F5F9;color:#475569}
+  .pill.reason.non_renseigne{background:#F1F5F9;color:#94A3B8}
+
+  .warn-tag{display:inline-block;padding:2px 6px;border-radius:3px;font-size:10px;background:var(--warn-light);color:var(--warn);margin:0 3px 3px 0;cursor:help}
+  .surprising{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;background:var(--danger-light);color:var(--danger);font-weight:600;margin-left:6px}
+
+  .sub{color:var(--muted);font-size:11px;margin-top:2px}
+  .empty-state{padding:60px;text-align:center;color:var(--muted)}
+  #loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;z-index:100}
+  .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div id="loading-overlay"><div class="spinner"></div></div>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Refus Zou Vert</h1>
+    <p>Refus banque sur dossiers sans warning bloquant — cibles pour challenger la décision</p>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-n" id="stat-total">0</div><div class="stat-label">Refus</div></div>
+    <div class="stat"><div class="stat-n" id="stat-banks">0</div><div class="stat-label">Banques</div></div>
+    <div class="stat"><div class="stat-n" id="stat-projects">0</div><div class="stat-label">Dossiers</div></div>
+    <div class="stat"><div class="stat-n" id="stat-surprising">0</div><div class="stat-label">Surprenants</div></div>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="search-wrap">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    <input type="search" id="q" placeholder="Broker, expert, project, banque…">
+  </div>
+  <div class="date-wrap">Depuis le <input type="date" id="since"></div>
+  <label class="toggle" id="surprising-toggle">
+    <input type="checkbox" id="chk-surprising"> Refus surprenants uniquement
+  </label>
+  <button class="btn" id="btn-bank-view">Vue par banque</button>
+  <span id="bank-filter-indicator"></span>
+  <div class="chips" id="chips"></div>
+</div>
+
+<div class="bank-summary" id="bank-summary">
+  <div class="head">Refus par banque — clique une ligne pour filtrer</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Banque</th>
+        <th class="num">Refus</th>
+        <th class="num">Dossiers</th>
+        <th>Motif dominant</th>
+        <th class="num">Δ moyen</th>
+      </tr>
+    </thead>
+    <tbody id="bank-tbody"></tbody>
+  </table>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Jour</th>
+        <th>Banque</th>
+        <th>Dossier</th>
+        <th>Broker / Expert</th>
+        <th>Motif</th>
+        <th class="num">Taux dem.</th>
+        <th class="num">Zou sûr</th>
+        <th class="num">Δ</th>
+        <th class="num">Montant</th>
+        <th class="num">Endett.</th>
+        <th>Warnings</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div class="empty-state" id="empty" style="display:none">Aucun résultat.</div>
+</div>
+
+<script>
+const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6Wz8FRC26Tz5fFyieJq3XF1xYCYcI38RAfeC_v1j99VGMCwz49_lJn5i4JqjLmPjtbcuqZQsNSKVo/pub?output=csv';
+
+// Mapping bank_slug → nom canonique — même logique que le projet 1
+function slugToDisplay(slug) {
+  if (!slug) return 'Inconnu';
+  const s = String(slug).toLowerCase();
+  if (s.includes('bnp')) return 'BNP Paribas';
+  if (s.includes('ccf')) return 'CCF';
+  if (s.includes('cic')) return 'CIC';
+  if (s.includes('lcl')) return 'LCL';
+  if (s.includes('banque_postale') || s.includes('la_banque_postale')) return 'La Banque Postale';
+  if (s.includes('fortuneo')) return 'Fortuneo';
+  if (s.includes('palatine')) return 'Palatine';
+  if (s.includes('bred')) return 'BRED';
+  if (s.includes('hsbc')) return 'HSBC';
+  if (s.includes('credit_mutuel') || s.includes('crédit_mutuel')) {
+    if (s.includes('bretagne') || s.includes('ocean') || s.includes('sudouest') || s.includes('sud_ouest')) return 'Credit Mutuel Partenaires';
+    return 'Credit Mutuel Non Partenaires';
+  }
+  if (s.includes('societe_generale') || s.includes('société_générale') || s.startsWith('sg_')) {
+    if (s.includes('idf') || s.includes('ile_de_france') || s === 'societe_generale') return 'SG IDF';
+    return 'SG Province';
+  }
+  return String(slug).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function normalizeBank(bank) {
+  if (!bank) return 'Inconnu';
+  const b = bank.trim();
+  if (b === 'BNP Paribas') return 'BNP';
+  if (b === 'La Banque Postale') return 'LBP';
+  if (b === 'CCF') return 'CCF';
+  if (b === 'CIC') return 'CIC';
+  if (b === 'LCL') return 'LCL';
+  if (b === 'Fortuneo') return 'Fortuneo';
+  if (b === 'Palatine') return 'Palatine';
+  if (b === 'BRED') return 'BRED';
+  if (b === 'HSBC') return 'HSBC';
+  if (b === 'Credit Mutuel Partenaires' || b === 'Crédit Mutuel Partenaires') return 'Crédit Mutuel Partenaires';
+  if (b.toLowerCase().includes('credit mutuel') || b.toLowerCase().includes('crédit mutuel')) return 'Crédit Mutuel Non Partenaires';
+  if (b === 'SG IDF') return 'SG IDF';
+  if (b === 'SG Province' || b.startsWith('Société Générale')) return 'SG Province';
+  return b;
+}
+
+function bankOf(slug) {
+  return normalizeBank(slugToDisplay(slug));
+}
+
+const REASON_LABELS = {
+  non_justifie:'Non justifié',
+  endettement:'Endettement',
+  profil:'Profil',
+  type_projet:'Type projet',
+  apport_epargne_insuffisant:'Apport insuffisant',
+  capacite_insuffisante:'Capacité insuffisante',
+  paternite:'Paternité',
+  perimetre_geographique:'Périmètre géo',
+  mauvaise_tenue_de_compte:'Tenue de compte',
+  taux_usure:'Taux usure',
+  autre_texte_libre:'Autre (texte libre)',
+  non_renseigne:'—'
+};
+
+let DATA = [];
+let activeReasons = new Set();
+let query = '';
+let sinceDate = '';
+let onlySurprising = false;
+let activeBank = null;
+let showBankSummary = false;
+
+function parseCSV(text) {
+  const rows = [];
+  let row = [], cur = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i], next = text[i + 1];
+    if (inQ) {
+      if (ch === '"' && next === '"') { cur += '"'; i++; }
+      else if (ch === '"') { inQ = false; }
+      else { cur += ch; }
+    } else {
+      if (ch === '"') { inQ = true; }
+      else if (ch === ',') { row.push(cur); cur = ''; }
+      else if (ch === '\r') { /* skip CR */ }
+      else if (ch === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+      else { cur += ch; }
+    }
+  }
+  if (cur.length || row.length) { row.push(cur); rows.push(row); }
+  const headers = rows.shift().map(h => h.trim());
+  return rows.filter(r => r.length && r.some(c => c !== '')).map(vals => {
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = (vals[i] || '').trim());
+    return obj;
+  });
+}
+
+function num(v) {
+  if (v === '' || v == null) return null;
+  const n = parseFloat(v);
+  return isNaN(n) ? null : n;
+}
+
+function bool(v) {
+  return v === 'TRUE' || v === 'true' || v === true;
+}
+
+function rowToObj(r) {
+  return {
+    jour: r.jour,
+    project_id: r.project_id,
+    interrogation_id: r.interrogation_id,
+    bank_slug: r.bank_slug,
+    bank_group: r.bank_group,
+    interrogation_status: r.interrogation_status,
+    bank_denied_reason: r.bank_denied_reason,
+    reason_bucket: r.reason_bucket || 'non_renseigne',
+    severity: r.severity,
+    warnings_json: r.warnings_json || '[]',
+    nb_warnings: num(r.nb_warnings) || 0,
+    broker_name: r.broker_name,
+    expert_name: r.expert_name,
+    main_loan_rate: num(r.main_loan_rate),
+    rate_zou_sure: num(r.rate_zou_sure),
+    rate_obtained: num(r.rate_obtained),
+    total_loan_amount: num(r.total_loan_amount),
+    main_loan_amount: num(r.main_loan_amount),
+    main_loan_duration_months: num(r.main_loan_duration_months),
+    contribution_amount: num(r.contribution_amount),
+    contribution_rate: num(r.contribution_rate),
+    indebtedness_rate: num(r.indebtedness_rate),
+    indebtedness_rate_insurance: num(r.indebtedness_rate_insurance),
+    nb_mortgagors: num(r.nb_mortgagors),
+    age_moyen: num(r.age_moyen),
+    primary_mortgagor_contract: r.primary_mortgagor_contract,
+    is_bank_mortgagor_current_bank: r.is_bank_mortgagor_current_bank,
+    has_prequalif: bool(r.has_prequalif)
+  };
+}
+
+function isSurprising(r) {
+  return r.has_prequalif && r.nb_warnings === 0 && (!r.severity || r.severity === '');
+}
+
+function fmtDate(v) {
+  if (!v) return '';
+  const d = new Date(v);
+  if (isNaN(d)) return String(v);
+  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+}
+
+function fmtMoney(n) {
+  return n == null ? '' : Math.round(n).toLocaleString('fr-FR') + ' €';
+}
+
+function fmtPct(n) {
+  return n == null ? '' : (n * 100).toFixed(1) + ' %';
+}
+
+function fmtRate(n) {
+  return n == null ? '' : Number(n).toFixed(2) + ' %';
+}
+
+function fmtDelta(demRate, zouRate) {
+  if (demRate == null || zouRate == null) return '';
+  const d = demRate - zouRate;
+  const sign = d > 0 ? '+' : '';
+  const color = d < 0 ? 'var(--ok)' : d > 0 ? 'var(--danger)' : 'var(--muted)';
+  return `<span style="color:${color}">${sign}${d.toFixed(2)}</span>`;
+}
+
+function projectLink(id) {
+  if (!id) return '';
+  return `<span title="${id}" style="font-family:monospace;font-size:12px;color:var(--muted)">${id.slice(0, 8)}…</span>`;
+}
+
+function renderChips() {
+  const counts = {};
+  DATA.forEach(r => counts[r.reason_bucket] = (counts[r.reason_bucket] || 0) + 1);
+  const chips = document.getElementById('chips');
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  const chipsHtml = sorted.map(([k, n]) => {
+    const active = activeReasons.has(k) ? 'active' : '';
+    const label = REASON_LABELS[k] || k;
+    return `<span class="chip ${active}" data-k="${k}">${label}<span class="n">${n}</span></span>`;
+  }).join('');
+  const resetHtml = activeReasons.size ? `<span class="chip reset" id="chip-reset">Reset ×</span>` : '';
+  chips.innerHTML = chipsHtml + resetHtml;
+  chips.querySelectorAll('.chip[data-k]').forEach(el => {
+    el.onclick = () => {
+      const k = el.dataset.k;
+      if (activeReasons.has(k)) activeReasons.delete(k);
+      else activeReasons.add(k);
+      render();
+    };
+  });
+  const reset = document.getElementById('chip-reset');
+  if (reset) reset.onclick = () => { activeReasons.clear(); render(); };
+}
+
+function baseFilter(r) {
+  if (sinceDate && r.jour < sinceDate) return false;
+  if (activeReasons.size && !activeReasons.has(r.reason_bucket)) return false;
+  if (onlySurprising && !isSurprising(r)) return false;
+  if (query) {
+    const q = query.toLowerCase();
+    const match = [r.project_id, r.broker_name, r.expert_name, r.bank_slug, r.bank_group, r.bank_denied_reason]
+      .some(v => v && String(v).toLowerCase().includes(q));
+    if (!match) return false;
+  }
+  return true;
+}
+
+function renderBankSummary() {
+  const panel = document.getElementById('bank-summary');
+  panel.classList.toggle('open', showBankSummary);
+  if (!showBankSummary) return;
+
+  const preFiltered = DATA.filter(baseFilter);
+  const byBank = {};
+  preFiltered.forEach(r => {
+    const name = bankOf(r.bank_slug);
+    if (!byBank[name]) byBank[name] = { name, rawSlugs: new Set(), rows: [] };
+    byBank[name].rawSlugs.add(r.bank_slug);
+    byBank[name].rows.push(r);
+  });
+
+  const rows = Object.values(byBank).map(b => {
+    const reasonCounts = {};
+    b.rows.forEach(r => reasonCounts[r.reason_bucket] = (reasonCounts[r.reason_bucket] || 0) + 1);
+    const topReason = Object.entries(reasonCounts).sort((a, b) => b[1] - a[1])[0];
+    const deltas = b.rows.map(r => (r.main_loan_rate != null && r.rate_zou_sure != null) ? r.main_loan_rate - r.rate_zou_sure : null).filter(v => v != null);
+    const avgDelta = deltas.length ? deltas.reduce((a, b) => a + b, 0) / deltas.length : null;
+    return {
+      name: b.name,
+      subSlugs: [...b.rawSlugs].sort(),
+      count: b.rows.length,
+      projects: new Set(b.rows.map(r => r.project_id)).size,
+      topReason: topReason ? topReason[0] : '',
+      topReasonN: topReason ? topReason[1] : 0,
+      avgDelta
+    };
+  }).sort((a, b) => b.count - a.count);
+
+  const tbody = document.getElementById('bank-tbody');
+  tbody.innerHTML = rows.map(b => {
+    const active = activeBank === b.name ? 'active' : '';
+    const deltaCell = b.avgDelta == null ? '' : (b.avgDelta >= 0 ? '+' : '') + b.avgDelta.toFixed(2);
+    const label = REASON_LABELS[b.topReason] || b.topReason;
+    const subs = b.subSlugs.length > 1 ? `<div class="sub" style="margin:0">${b.subSlugs.length} entités</div>` : '';
+    return `<tr class="bank-row ${active}" data-name="${b.name}">
+      <td><strong>${b.name}</strong>${subs}</td>
+      <td class="num">${b.count}</td>
+      <td class="num">${b.projects}</td>
+      <td>${label} <span style="opacity:.6">(${b.topReasonN})</span></td>
+      <td class="num">${deltaCell}</td>
+    </tr>`;
+  }).join('');
+  tbody.querySelectorAll('tr.bank-row').forEach(el => {
+    el.onclick = () => {
+      const name = el.dataset.name;
+      activeBank = activeBank === name ? null : name;
+      render();
+    };
+  });
+}
+
+function renderBankIndicator() {
+  const el = document.getElementById('bank-filter-indicator');
+  if (activeBank) {
+    el.innerHTML = `<span class="active-filter">Banque : ${activeBank}<span class="x" id="clear-bank">×</span></span>`;
+    document.getElementById('clear-bank').onclick = () => { activeBank = null; render(); };
+  } else {
+    el.innerHTML = '';
+  }
+}
+
+function render() {
+  renderBankSummary();
+  renderBankIndicator();
+
+  const rows = DATA.filter(r => {
+    if (!baseFilter(r)) return false;
+    if (activeBank && bankOf(r.bank_slug) !== activeBank) return false;
+    return true;
+  }).sort((a, b) => (b.jour || '').localeCompare(a.jour || ''));
+
+  document.getElementById('stat-total').textContent = rows.length;
+  document.getElementById('stat-banks').textContent = new Set(rows.map(r => r.bank_slug)).size;
+  document.getElementById('stat-projects').textContent = new Set(rows.map(r => r.project_id)).size;
+  document.getElementById('stat-surprising').textContent = rows.filter(isSurprising).length;
+
+  const tbody = document.getElementById('tbody');
+  const empty = document.getElementById('empty');
+  if (!rows.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = rows.map(r => {
+    let warns = '';
+    try {
+      const w = JSON.parse(r.warnings_json || '[]');
+      warns = w.map(f => {
+        const msg = (f.flag_message || '').replace(/"/g, '&quot;');
+        return `<span class="warn-tag" title="${msg}">${f.flag_code}</span>`;
+      }).join('');
+    } catch (e) {}
+    const surp = isSurprising(r) ? '<span class="surprising" title="Refus surprenant : préqual OK, aucun warning">!</span>' : '';
+    const reasonKey = r.reason_bucket;
+    const reasonLabel = REASON_LABELS[reasonKey] || reasonKey;
+    const rawReason = r.bank_denied_reason && r.bank_denied_reason !== reasonKey
+      ? `<div class="sub" title="${r.bank_denied_reason.replace(/"/g, '&quot;')}">${r.bank_denied_reason.slice(0, 60)}${r.bank_denied_reason.length > 60 ? '…' : ''}</div>`
+      : '';
+    return `<tr>
+      <td>${fmtDate(r.jour)}</td>
+      <td>${bankOf(r.bank_slug)}<div class="sub">${r.bank_slug || ''}</div></td>
+      <td>${projectLink(r.project_id)}${surp}</td>
+      <td>${r.broker_name || ''}<div class="sub">${r.expert_name || ''}</div></td>
+      <td><span class="pill reason ${reasonKey}">${reasonLabel}</span>${rawReason}</td>
+      <td class="num">${fmtRate(r.main_loan_rate)}</td>
+      <td class="num">${fmtRate(r.rate_zou_sure)}</td>
+      <td class="num">${fmtDelta(r.main_loan_rate, r.rate_zou_sure)}</td>
+      <td class="num">${fmtMoney(r.main_loan_amount)}</td>
+      <td class="num">${fmtPct(r.indebtedness_rate)}</td>
+      <td>${warns}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function fetchData() {
+  const loading = document.getElementById('loading-overlay');
+  loading.style.display = 'flex';
+  try {
+    const res = await fetch(SHEET_CSV_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const rows = parseCSV(text);
+    DATA = rows.map(rowToObj);
+    renderChips();
+    render();
+  } catch (e) {
+    console.error('Fetch error:', e);
+    document.getElementById('empty').textContent = 'Erreur de chargement : ' + e.message;
+    document.getElementById('empty').style.display = 'block';
+  } finally {
+    loading.style.display = 'none';
+  }
+}
+
+document.getElementById('q').oninput = e => { query = e.target.value; render(); };
+document.getElementById('since').oninput = e => { sinceDate = e.target.value; render(); };
+document.getElementById('chk-surprising').onchange = e => {
+  onlySurprising = e.target.checked;
+  document.getElementById('surprising-toggle').classList.toggle('active', onlySurprising);
+  render();
+};
+document.getElementById('btn-bank-view').onclick = () => {
+  showBankSummary = !showBankSummary;
+  document.getElementById('btn-bank-view').classList.toggle('active', showBankSummary);
+  render();
+};
+
+fetchData();
+</script>
+</body>
+</html>
