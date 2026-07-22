@@ -109,7 +109,6 @@
     <div class="stat"><div class="stat-n" id="stat-total">0</div><div class="stat-label">Refus</div></div>
     <div class="stat"><div class="stat-n" id="stat-banks">0</div><div class="stat-label">Banques</div></div>
     <div class="stat"><div class="stat-n" id="stat-projects">0</div><div class="stat-label">Dossiers</div></div>
-    <div class="stat"><div class="stat-n" id="stat-surprising">0</div><div class="stat-label">Surprenants</div></div>
   </div>
 </div>
 
@@ -119,9 +118,6 @@
     <input type="search" id="q" placeholder="Broker, expert, project, banque…">
   </div>
   <div class="date-wrap">Depuis le <input type="date" id="since"></div>
-  <label class="toggle" id="surprising-toggle">
-    <input type="checkbox" id="chk-surprising"> Refus surprenants uniquement
-  </label>
   <button class="btn" id="btn-bank-view">Vue par banque</button>
   <span id="bank-filter-indicator"></span>
   <div class="chips" id="chips"></div>
@@ -234,7 +230,6 @@ let DATA = [];
 let activeReasons = new Set();
 let query = '';
 let sinceDate = '';
-let onlySurprising = false;
 let activeBank = null;
 let showBankSummary = false;
 
@@ -307,10 +302,6 @@ function rowToObj(r) {
   };
 }
 
-function isSurprising(r) {
-  return r.has_prequalif && r.nb_warnings === 0 && (!r.severity || r.severity === '');
-}
-
 function fmtDate(v) {
   if (!v) return '';
   const d = new Date(v);
@@ -370,7 +361,6 @@ function renderChips() {
 function baseFilter(r) {
   if (sinceDate && r.jour < sinceDate) return false;
   if (activeReasons.size && !activeReasons.has(r.reason_bucket)) return false;
-  if (onlySurprising && !isSurprising(r)) return false;
   if (query) {
     const q = query.toLowerCase();
     const match = [r.project_id, r.broker_name, r.expert_name, r.bank_slug, r.bank_group, r.bank_denied_reason]
@@ -457,7 +447,6 @@ function render() {
   document.getElementById('stat-total').textContent = rows.length;
   document.getElementById('stat-banks').textContent = new Set(rows.map(r => r.bank_slug)).size;
   document.getElementById('stat-projects').textContent = new Set(rows.map(r => r.project_id)).size;
-  document.getElementById('stat-surprising').textContent = rows.filter(isSurprising).length;
 
   const tbody = document.getElementById('tbody');
   const empty = document.getElementById('empty');
@@ -473,7 +462,6 @@ function render() {
         return `<span class="warn-tag" title="${msg}">${f.flag_code}</span>`;
       }).join('');
     } catch (e) {}
-    const surp = isSurprising(r) ? '<span class="surprising" title="Refus surprenant : préqual OK, aucun warning">!</span>' : '';
     const reasonKey = r.reason_bucket;
     const reasonLabel = REASON_LABELS[reasonKey] || reasonKey;
     const rawReason = r.bank_denied_reason && r.bank_denied_reason !== reasonKey
@@ -482,7 +470,7 @@ function render() {
     return `<tr>
       <td>${fmtDate(r.jour)}</td>
       <td>${bankOf(r.bank_slug)}<div class="sub">${r.bank_slug || ''}</div></td>
-      <td>${projectLink(r.project_id)}${surp}</td>
+      <td>${projectLink(r.project_id)}</td>
       <td>${r.broker_name || ''}<div class="sub">${r.expert_name || ''}</div></td>
       <td><span class="pill reason ${reasonKey}">${reasonLabel}</span>${rawReason}</td>
       <td class="num">${fmtRate(r.main_loan_rate)}</td>
@@ -517,11 +505,6 @@ async function fetchData() {
 
 document.getElementById('q').oninput = e => { query = e.target.value; render(); };
 document.getElementById('since').oninput = e => { sinceDate = e.target.value; render(); };
-document.getElementById('chk-surprising').onchange = e => {
-  onlySurprising = e.target.checked;
-  document.getElementById('surprising-toggle').classList.toggle('active', onlySurprising);
-  render();
-};
 document.getElementById('btn-bank-view').onclick = () => {
   showBankSummary = !showBankSummary;
   document.getElementById('btn-bank-view').classList.toggle('active', showBankSummary);
